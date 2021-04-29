@@ -1,0 +1,77 @@
+---
+title: "Zadanie zaliczeniowe 1"
+author: "Wojciech Kłopotek"
+date: "29 04 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Treść zadania
+
+**Celem** zadania jest staystyczna analiza danych znajdujących się w pliku `people.tab`.
+
+**Dane:** Są to dane symulowane; opisują wiek (zmienna `age`), wagę (`weight`), wzrost (`height`), płeć (`gender`), stan cywilny (`married`), liczbę dzieci (`number_of_kids`), posiadane zwierzę domowe (`pet`) oraz miesięczne wydatki (`expenses`) pewnych osób. We wszystkich zadaniach poniżej zmienna `expenses` jest **zmienną objaśnianą** (zależną), a pozostałe zmienne są **zmiennymi objaśniającymi** (niezależnymi).
+
+**Wynikiem** ma być raport w formacie .Rmd oraz skompilowany do html. Raport w obydwu formatach należy przesłać na adres email do prwoadzącego laboratorium do sprawdzenia.
+
+# Zadanie 1
+
+*Wczytaj dane, objerzyj je i podsumuj w dwóch-trzech zdaniach. Pytania pomocnicze: ile jest obserwacji, ile zmiennych ilościowych, a ile jakościowych? Czy są zależności w zmiennych objaśniających (policz i zaprezentuj na wykresach korelacje pomiędzy zmiennymi ilościowymi), a także zbadaj zależność zmiennych jakościowych. Skomentuj wyniki. Czy występują jakieś braki danych?*
+
+```{r}
+df <- read.csv("people.tab", sep="\t")
+```
+
+Zbiór danych zawiera `r nrow(df)` obserwacji, 3 zmienne jakościowe i 5 zmiennych ilościowych.
+
+```{r}
+library(ggplot2)
+library(GGally)
+
+#ggpairs(df[,-which(colnames(df)=='expenses')], aes(col=gender))
+ggpairs(df, aes(col=gender), columns = c(1,2,3,6,8))
+```
+
+
+Widzimy statystycznie znaczące korelacje między zmiennymi `expenses` i `age` (wydatkami a wiekiem) oraz `height` i `weight` (wzrostem i wagą) dla zagregowanych danych oraz dla wszystkich płci osobno. Powyższe wykresy wskazują na to, że wiek wyjaśnia dużą część wariancji w wydatkach.
+
+```{r}
+ggpairs(df[,c(4,5,7)])
+```
+
+W danych występują pojedyncze braki:
+```{r}
+colSums(is.na(df))
+```
+
+Konkretnie zbiór danych zawiera `r length(which(rowSums(is.na(df)) > 0))` wybrakowanych wierszy.
+
+# Zadanie 2
+
+***Podsumuj dane przynajmniej trzema różnymi wykresami**. Należy przygotować:*
+
+* *wykres typu scatter-plot (taki jak na wykładzie 6, slajd 3) dla wszystkich zmiennych objaśniających ilościowych i zmiennej objaśnianej*
+* *Wykresy typu pudełkowy (boxplot) dla jednej wybranej zmiennej ilościowej.*
+* *Wykres typu słupkowy (barplot) dla jednej wybranej zmiennej jakościowej.*
+
+*Mile widziane dodatkowe wykresy wg własnej inwencji (np. histogram, punktowy, liniowy, mapa ciepła, ...)*
+
+```{r}
+pairs(~ age + weight + height + number_of_kids + expenses, data = df, col = 'blue', pch='.')
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(df) + geom_boxplot(aes(y = age))
+```
+
+```{r}
+# Usuwamy niepoprawny wiersz
+ggplot(df[-nrow(df),]) + geom_bar(aes(x = pet))
+```
+
+
