@@ -36,7 +36,7 @@ ggpairs(df, aes(col=gender), columns = c(1,2,3,6,8))
 ```
 
 
-Widzimy statystycznie znaczące korelacje między zmiennymi `expenses` i `age` (wydatkami a wiekiem) oraz `height` i `weight` (wzrostem i wagą) dla zagregowanych danych oraz dla wszystkich płci osobno. Powyższe wykresy wskazują na to, że wiek wyjaśnia dużą część wariancji w wydatkach.
+Widzimy statystycznie znaczące korelacje między zmiennymi `expenses` i `age` (wydatkami a wiekiem) oraz `height` i `weight` (wzrostem i wagą) dla zagregowanych danych oraz dla wszystkich płci osobno. Powyższe wykresy wskazują na to, że wiek jest znacząco skorelowany z wydatkami.
 
 ```{r}
 ggpairs(df[,c(4,5,7)])
@@ -74,4 +74,72 @@ ggplot(df) + geom_boxplot(aes(y = age))
 ggplot(df[-nrow(df),]) + geom_bar(aes(x = pet))
 ```
 
+```{r}
+df = df[-which(rowSums(is.na(df)) > 0),]
+```
 
+# Zadanie 3
+
+***Policz p-wartości dla hipotez o wartości średniej $m = 170$ i medianie $me = 165$ (cm)** dla zmiennej $wzrost$. Wybierz statystykę testową dla alternatywy lewostronnej, podaj założenia, z jakich korzystałeś i skomentuj, czy wydają Ci się uprawnione*
+
+Założę, że średnia zmiennej $wzrost$ ma rozkład normalny, ze względu na to, że obserwacje pochodzą z tego samego rozkładu i są niezależne, więc ze względu na dużą ich liczbę (`r nrow(df)` > 30) możemy użyć Centralnego Twierdzenia Granicznego. Ze względu na to, że nie znamy wariancji populacji, ale liczność próby jest liczna ($n = $`r nrow(df)`) użyjemy wariancji próby i policzymy statystykę testową dla standardowego rozkładu normalnego:
+
+$$
+Z = \frac{\bar{X} - m}{S_n}\sqrt{n} \sim U
+$$
+
+```{r}
+m <- 170
+n <- nrow(df)
+S_n <- sqrt((n-1)/n) * sd(df$height)
+Z <- (mean(df$height) - m) / S_n * sqrt(nrow(df))
+pnorm(Z)
+```
+
+Dla mediany możemy przeprowadzić test Wilcoxona dla jednej próby
+
+```{r}
+wilcox.test(df$height, mu=165)
+```
+
+# Zadanie 4
+***Policz dwustronne przedziały ufności** na poziomie $0.99$ dla zmiennej $wiek$ dla następujących parametrów rozkładu:*
+1. *średnia i odchylenie standardowe*
+2. *kwantyle $\frac{1}{4}$, $\frac{2}{4}$ i $\frac{3}{4}$*
+*Podaj założenia, z jakich korzystałeś i skomentuj, czy wydają Ci się uprawnione.*
+
+## Przedziały ufności dla średniej
+
+Jeśli $P\left(\frac{\bar{X}-\mu}{S_n}\sqrt{n} \in (\pm z_{0.995})\right) = 0.99$, to: $P\left(\mu \in (\bar{X} \mp z_{0.995})\right) = 0.99$
+
+```{r}
+n <- nrow(df)
+S_n <- sqrt((n-1)/n) * sd(df$age)
+
+show(c(mean(df$age) - S_n / sqrt(n) * qnorm(0.995), mean(df$age) + S_n / sqrt(n) * qnorm(0.995)))
+```
+
+## Przedziały ufności dla wariancji
+
+Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład normalny. (Wykres jest liniowy)
+
+```{r}
+qqnorm(df$age)
+```
+
+Zakładając, że obserwacje wieku są niezależne, możemy zauważyć, że $P \left( \frac{nS_n^2}{\sigma^2} \in (\chi^2(0.005), \chi^2(0.995))\right) = 0.99$, więc: $P \left( \sigma^2 \in \left( \frac{nS_n^2}{\chi^2(0.995)}, \frac{nS_n^2}{\chi^2(0.005)} \right) \right) = 0.99$
+
+```{r}
+n <- nrow(df)
+S2 <- (n-1) / n * var(df$age)
+
+show(c( n*S2 / qchisq(0.995, n-1), n*S2 / qchisq(0.005, n-1) ))
+```
+
+## Kwantyle
+
+Korzystając z założenia, że zmienna $wiek$ ma rozkład normalny, możemy
+
+```{r}
+quantile(df$age)
+```

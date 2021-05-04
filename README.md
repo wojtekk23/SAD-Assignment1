@@ -1,9 +1,9 @@
 # SAD-Assignment1
 Assignment for Statistics and Data Analysis course at MIMUW
 
-# TODO
+## TODO
 
-* Czy usunąć od razu wybrakowany wiersz? (Nie widzę powodów przeciwko...)
+* Obczaj, kiedy jest rozsądnie założyć, że populacja pochodzi z rozkładu normalnego
 
 ## Część 1
 
@@ -15,3 +15,12 @@ Assignment for Statistics and Data Analysis course at MIMUW
 ## Część 2
 
 * *Mile widziane dodatkowe wykresy wg własnej inwencji (np. histogram, punktowy, liniowy, mapa ciepła, ...)*
+
+## Część 3
+
+* Sprawdź, czy na pewno liczysz lewostronną alternatywę
+* TODO: test mediany??
+
+## Część 4
+
+* TODO: Przedziały ufności dla kwartyli?
