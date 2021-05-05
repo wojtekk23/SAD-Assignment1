@@ -143,3 +143,65 @@ Korzystając z założenia, że zmienna $wiek$ ma rozkład normalny, możemy
 ```{r}
 quantile(df$age)
 ```
+
+# Zadanie 5
+
+***Przetestuj na poziomie istotności $0.01$ trzy hipotezy istotności:***
+1. *różnicy między średnią wartością wybranej zmiennej dla kobiet i dla mężczyzn*
+2. *zależności między dwiema zmiennymi ilościowymi*
+3. *zależności między dwiema zmiennymi jakościowymi*
+
+
+## Różnica między średnią wartością wzrostu dla kobiet i dla mężczyzn
+
+```{r}
+qqnorm(df[df.woman,]$height) 
+qqnorm(df[df.man,]$height)
+```
+Wykresy wyglądają na leżące na prostej, więc uznamy, że obie zmienne pochodzą z rozkładu normalnego.
+
+Skorzystamy z t-testu dla dwóch średnich (testu Welcha). Przyjmujemy przy tym Nasza hipotezy:
+$$
+H_0: \mu_1 = \mu_2 \\
+H_a: \mu_1 \not= \mu_2
+$$
+Użyjemy statystyki testowej o rokzładzie
+$$
+T = \frac{\bar{X_1} - \bar{X_2}}{\sqrt{\frac{s_1^2}{N_1} + \frac{s_2^2}{N_2}}}
+$$
+
+```{r}
+df.woman <- df$gender == "woman"
+df.man <- df$gender == "man"
+t.test(df[df.woman,]$height, df[df.man,]$height, alternative="two.sided", var.equal=F, conf.level=0.99)
+```
+Z powyższego wynika, że dla przyjętego poziomu istotności nie możemy odrzucić hipotezy zerowej, więc przyjmujemy, że kobiety i mężczyźni mają średnio tyle samo wzrostu.
+
+## Zależność między wzrostem a wagą
+
+Za pomocą testu niezależności $\rho$-Spearmana, czy wzrost i waga są niezależne. Hipotezy:
+$$
+H_0: height \text{ i } weight \text{ są niezależne} \\
+H_1: \text{istnieje zależność między } height \text{ i } weight\\
+$$
+```{r}
+cor.test(df$height, df$weight, method="spearman", conf.level = 0.99)
+```
+
+p-wartość w powyższej funkcji została policzona korzystając z wartości rozkładu t. Tak czy siak, wartość p dla naszego modelu jest znacznie mniejsza niż wymagany przez nas poziom istotności, więc odrzucamy hipotezę zerową i mówimy, że istnieje zależność między wzrostem i wagą.
+
+## Zależność między płcią a statusem małżeńskim
+
+Tym razem wykorzystamy test $\chi^2$-Pearsona. Przyjmując oznaczenia brzegowych rozkładów: $P(X=x_i)=p_{i.}, P(Y=y_j)=p_{.j}$ oraz łącznego rozkładu $P(X=x_i,Y=y_j)=p_{ij}$ (gdzie $X$ uznajmy, że jest płcią, $Y$ statusem małżeńskim), badamy następujące hipotezy:
+$$
+H_0: p_{ij} = p_{i.}p_{.j} \\
+H_1: p_{ij} \not= p_{i.}p_{.j} \text{ (zmienne zależne)}
+$$
+```{r}
+test.table <- table(df$gender, df$married)
+show(test.table)
+```
+```{r}
+chisq.test(test.table)
+```
+Widzimy, że uzyskane p-value jest wyższe niż oczekiwany od nas poziom istotności, więc nie odrzucamy hipotezy zerowej i uznajemy, że płeć i status małżeński są niezależne.

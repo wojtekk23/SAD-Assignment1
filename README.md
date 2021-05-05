@@ -24,3 +24,8 @@ Assignment for Statistics and Data Analysis course at MIMUW
 ## Część 4
 
 * TODO: Przedziały ufności dla kwartyli?
+
+## Część 5
+
+* Czy możemy powiedzieć, że odrzucamy hipotezę zerową, bo p-value < poziom istotności?
+* TODO: Ostatnia hipoteza
