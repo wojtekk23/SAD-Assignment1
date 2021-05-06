@@ -23,7 +23,9 @@ Assignment for Statistics and Data Analysis course at MIMUW
 
 ## Część 4
 
-* TODO: Przedziały ufności dla kwartyli?
+* **TODO: przedział jest dla ODCHYLENIA STANDARDOWEGO, NIE DLA WARIANCJI**
+* **TODO: Czy na pewno możemy założyć, że wiek ma rozkład normalny**
+* TODO: Przedziały ufności dla kwartyli? Czy możemy do tego użyć bootstrapa i czy na pewno w ten sposób otrzymamy przedziały ufności?
 
 ## Część 5
 

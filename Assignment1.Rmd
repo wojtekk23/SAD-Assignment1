@@ -32,6 +32,7 @@ library(ggplot2)
 library(GGally)
 
 #ggpairs(df[,-which(colnames(df)=='expenses')], aes(col=gender))
+ggpairs(df, columns = c(1,2,3,6,8))
 ggpairs(df, aes(col=gender), columns = c(1,2,3,6,8))
 ```
 
@@ -108,9 +109,29 @@ wilcox.test(df$height, mu=165)
 2. *kwantyle $\frac{1}{4}$, $\frac{2}{4}$ i $\frac{3}{4}$*
 *Podaj założenia, z jakich korzystałeś i skomentuj, czy wydają Ci się uprawnione.*
 
+Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład normalny. (Wykres jest liniowy)
+
+```{r}
+qqnorm(df$age); qqline(df[df.man,]$age, col=2)
+```
+
+Możemy przetestować to bardziej rygorystycznie korzystając z testu Kołmogorowa lub testu Shapiro-Wilka (TODO: MAŁY EFEKT TEŻ JEST STATYStYCZNIE ZNACZĄCY, *Like most statistical significance tests, if the sample size is sufficiently large this test may detect even trivial departures from the null hypothesis (i.e., although there may be some statistically significant effect, it may be too small to be of any practical significance); thus, additional investigation of the effect size is typically advisable, e.g., a Q–Q plot in this case*)
+
+```{r}
+ks.test((df[df.man,]$age - mean(df[df.man,]$age)) / sd(df[df.man,]$age), "pnorm")
+shapiro.test(df$age)
+```
+
+```{r}
+ggplot(df) + geom_histogram(aes(x=(age - mean(age)) / sd(age))) + geom_histogram(aes(x=rnorm(n=500)), color='red') + theme_minimal()
+hist((df$age - mean(df$age)) / sd(df$age))
+hist(rt(n=500, df=85))
+```
+
+
 ## Przedziały ufności dla średniej
 
-Jeśli $P\left(\frac{\bar{X}-\mu}{S_n}\sqrt{n} \in (\pm z_{0.995})\right) = 0.99$, to: $P\left(\mu \in (\bar{X} \mp z_{0.995})\right) = 0.99$
+Jeśli $P\left(\frac{\bar{X}-\mu}{S_n}\sqrt{n} \in (\pm z_{0.995})\right) = 0.99$, to: $P\left(\mu \in (\bar{X} \mp z_{0.995})\right) = 0.99$. Korzystamy z Centralnego Twierdzenia Granicznego.
 
 ```{r}
 n <- nrow(df)
@@ -120,12 +141,6 @@ show(c(mean(df$age) - S_n / sqrt(n) * qnorm(0.995), mean(df$age) + S_n / sqrt(n)
 ```
 
 ## Przedziały ufności dla wariancji
-
-Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład normalny. (Wykres jest liniowy)
-
-```{r}
-qqnorm(df$age)
-```
 
 Zakładając, że obserwacje wieku są niezależne, możemy zauważyć, że $P \left( \frac{nS_n^2}{\sigma^2} \in (\chi^2(0.005), \chi^2(0.995))\right) = 0.99$, więc: $P \left( \sigma^2 \in \left( \frac{nS_n^2}{\chi^2(0.995)}, \frac{nS_n^2}{\chi^2(0.005)} \right) \right) = 0.99$
 
@@ -138,10 +153,20 @@ show(c( n*S2 / qchisq(0.995, n-1), n*S2 / qchisq(0.005, n-1) ))
 
 ## Kwantyle
 
-Korzystając z założenia, że zmienna $wiek$ ma rozkład normalny, możemy
+Aby oszacować przedziały ufności poszczególnych kwantyli, wykorzystam metodę Bootstrap. Wezmę $B=1000$ repróbek.
 
 ```{r}
-quantile(df$age)
+quartile.first <- replicate(1000, quantile(sample(df$age, 500, rep=T), 0.25))
+quartile.second <- replicate(1000, quantile(sample(df$age, 500, rep=T), 0.5))
+quartile.third <- replicate(1000, quantile(sample(df$age, 500, rep=T), 0.75))
+quartiles <- matrix(c(quartile.first, quartile.second, quartile.third), ncol=3)
+show(apply(quartiles, 2, mean))
+```
+
+Powyżej widzimy średnie kwartyle. Teraz policzmy przedziały ufności:
+
+```{r}
+apply(quartiles, 2, function(x) quantile(x, c(0.005, 0.995)))
 ```
 
 # Zadanie 5
