@@ -14,12 +14,11 @@ Assignment for Statistics and Data Analysis course at MIMUW
 
 ## Część 2
 
-* *Mile widziane dodatkowe wykresy wg własnej inwencji (np. histogram, punktowy, liniowy, mapa ciepła, ...)*
+* ***Mile widziane dodatkowe wykresy wg własnej inwencji (np. histogram, punktowy, liniowy, mapa ciepła, ...)***
 
 ## Część 3
 
 * Sprawdź, czy na pewno liczysz lewostronną alternatywę
-* TODO: test mediany??
 
 ## Część 4
 
@@ -30,4 +29,8 @@ Assignment for Statistics and Data Analysis course at MIMUW
 ## Część 5
 
 * Czy możemy powiedzieć, że odrzucamy hipotezę zerową, bo p-value < poziom istotności?
-* TODO: Ostatnia hipoteza
+* **TODO: Ostatnia hipoteza**
+
+## Część 6
+
+* Czy na pewno jest autokorelacja błędów w mniejszym modelu?

@@ -112,6 +112,8 @@ wilcox.test(df$height, mu=165)
 Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład normalny. (Wykres jest liniowy)
 
 ```{r}
+df.woman <- df$gender == "woman"
+df.man <- df$gender == "man"
 qqnorm(df$age); qqline(df[df.man,]$age, col=2)
 ```
 
@@ -196,8 +198,6 @@ T = \frac{\bar{X_1} - \bar{X_2}}{\sqrt{\frac{s_1^2}{N_1} + \frac{s_2^2}{N_2}}}
 $$
 
 ```{r}
-df.woman <- df$gender == "woman"
-df.man <- df$gender == "man"
 t.test(df[df.woman,]$height, df[df.man,]$height, alternative="two.sided", var.equal=F, conf.level=0.99)
 ```
 Z powyższego wynika, że dla przyjętego poziomu istotności nie możemy odrzucić hipotezy zerowej, więc przyjmujemy, że kobiety i mężczyźni mają średnio tyle samo wzrostu.
@@ -230,3 +230,84 @@ show(test.table)
 chisq.test(test.table)
 ```
 Widzimy, że uzyskane p-value jest wyższe niż oczekiwany od nas poziom istotności, więc nie odrzucamy hipotezy zerowej i uznajemy, że płeć i status małżeński są niezależne.
+
+# Zadanie 6
+
+*Oszacuj model regresji liniowej, przyjmując za zmienną zależną ($y$) wydatki domowe (`expenses`) a jako zmienne niezależne ($x$) przyjmując pozostałe zmienne. Rozważ, czy konieczne są transformacje zmiennych lub zmiennej objaśniającej. Podaj RSS, R<sup>2</sup>, p-wartości i oszacowania współczynników w pełnym modelu (w modelu zawierającym wszystkie zmienne). Następnie wybierz jedną zmienną objaśniającą, którą można by z pełnego modelu odrzucić (która najgorzej tłumaczy `expenses`). Aby dokonać wyboru takiej zmiennej, dla każdej ze zmiennych objaśniających sprawdź:*
+
+1. *Jaką ma p-wartość w pełnym modelu?*
+2. *O ile zmniejsza się R<sup>2</sup>, gdy usuniemy ją z pełnego modelu?*
+3. *O ile zwiększa się RSS, gdy ją usuniemy z pełnego modelu?*
+
+*Opisz wnioski*
+*Oszacuj model ze zbiorem zmiennych objaśniających pomniejszonym o wybraną zmienną. Sprawdź, czy w otrzymanym przez Ciebie modelu spełnione są założenia modelu liniowego i przedstaw na wykresach diagnostycznych: wykresie zależności reszt od zmiennej objaśnianej, na wykresie reszt studentyzowanych i na wykresie dźwigni i przedyskutuj, czy są spełnione*
+
+```{r}
+model <- lm(expenses ~ ., data = df)
+summary(model)
+```
+Widzimy, że w pełnym modelu $RSS = 213.9$, $R^2 = 0.861$, a wartości p są widoczne powyżej.
+
+Ze względu na wysokie p-values dobrymi kandydatami na zmienną do odrzucenia wydają się być: `weight`, `gender`, `married` i `number_of_kids`.
+
+Najlepszym kandydatem zdaje się być zmienna `married`. Nie dość, że przyjmuje największą p-wartość, to $R^2$ praktycznie się nie zmniejsza (na pewno zmniejsza się najmniej ze wszystkich zmniejszonych modeli) i $RSE$ *zmiejsza* się ($RSS$ zwiększyło się mniej niż liczba stopni swobody).
+```{r}
+model.no.weight <- lm(expenses ~ . - weight, data = df)
+model.no.gender <- lm(expenses ~ . - gender, data = df)
+model.no.married <- lm(expenses ~ . - married, data = df)
+model.no.number_of_kids <- lm(expenses ~ . - number_of_kids, data = df)
+summary(model.no.weight)
+summary(model.no.gender)
+summary(model.no.married)
+summary(model.no.number_of_kids)
+```
+
+Zatem przyjmę, że najlepiej odrzucić zmienną `married`. Sprawdzę, czy w modelu `model.no.married` spełnione są założenia regresji liniowej:
+
+* **L**inear trend
+* **I**ndependent residuals
+* **N**ormally distributed residuals
+* **E**qual variance of residuals
+
+## Trend liniowy i niezależność residuów
+
+```{r}
+plot(model.no.married, which=1)
+```
+
+Z powyższego wykresu wynika, że zależność między wydatkami a zmiennymi objaśniającymi nie jest do końca liniowa.
+
+Prawdopodobnie z tego powodu widzimy, że błędy nie są od siebie niezależne (różnica między sąsiednimi błędami jest mniejsza niż między błędami wybranymi losowo - autokorelacja).
+
+## Rozkład residuów
+
+```{r}
+plot(model.no.married, which=2)
+```
+
+Z powyższego wykresu wynika, że residua mają w przybliżeniu rozkład normalny.
+
+## Homoskedatyczność wariancji
+
+```{r}
+plot(model.no.married, which=3)
+```
+
+Widzimy, że wariancja residuów raczej nie zależy od zmiennej objaśnianej - utrzymuje się na mniej więcej tym samym poziomie (Odchylenia czerwonej lini trendu od prostej może wynikać z małej liczby obserwacji po obu stronach osi X na wykresie).
+
+# Obserwacje odstające
+
+```{r}
+plot(model.no.married, which=5)
+```
+Widzimy 3 obserwacje odstające (reszty studentyzowane odchylają się od 0 o więcej niż 3): 305, 409, 472.
+
+Na wykładzie za dźwigniowe zostały uznane obserwacje, dla których dźwignia jest większa od $\frac{2(p+1)}{n}$. Sprawdźmy, czy istnieją obserwacje dźwigniowe wg tej definicji.
+
+```{r}
+p <- 10
+n <- 500
+which(hatvalues(model.no.married) > 2*(p+1)/n)
+```
+Widzimy, że jedyną obserwacją zarówno odstającą jak i dźwigniową jest 409. Możemy zatem zastanowić się nad usunięciem ze zbioru danych obserwacji 305 i 472 (obserwacji odstających, niedźwigniowych)
+
