@@ -48,7 +48,11 @@ W danych występują pojedyncze braki:
 colSums(is.na(df))
 ```
 
-Konkretnie zbiór danych zawiera `r length(which(rowSums(is.na(df)) > 0))` wybrakowanych wierszy.
+Konkretnie zbiór danych zawiera `r length(which(rowSums(is.na(df)) > 0))` wybrakowanych wierszy. Usunę je
+
+```{r}
+df = df[-which(rowSums(is.na(df)) > 0),]
+```
 
 # Zadanie 2
 
@@ -60,23 +64,43 @@ Konkretnie zbiór danych zawiera `r length(which(rowSums(is.na(df)) > 0))` wybra
 
 *Mile widziane dodatkowe wykresy wg własnej inwencji (np. histogram, punktowy, liniowy, mapa ciepła, ...)*
 
+## Wykres typu scatter-plot
+
 ```{r}
 pairs(~ age + weight + height + number_of_kids + expenses, data = df, col = 'blue', pch='.')
 ```
 
+## Wykres typu box-plot dla zmiennej ilościowej
+
+Wykres przybliżający rozkład wieku.
+
 ```{r}
 library(ggplot2)
 
-ggplot(df) + geom_boxplot(aes(y = age))
+ggplot(df) + geom_boxplot(aes(y = age)) + labs(y="Wiek")
 ```
+
+## Wykres typu słupkowy dla zmiennej jakościowej
+
+Wykres przedstawiający liczby poszczególnych zwierząt
 
 ```{r}
 # Usuwamy niepoprawny wiersz
-ggplot(df[-nrow(df),]) + geom_bar(aes(x = pet))
+ggplot(df) + geom_bar(aes(x = pet)) + labs(x="zwierzęta", y="liczba")
 ```
 
+## Mapa ciepła
+
+Mapa ciepła pokazująca zależność wydatków w zależności od wzrostu i wagi
+
 ```{r}
-df = df[-which(rowSums(is.na(df)) > 0),]
+by_stop = 0.15
+weight_cuts <- cut(df$weight, quantile(df$weight, probs=seq(0, 1, by_stop)))
+height_cuts <- cut(df$height, quantile(df$height, probs=seq(0, 1, by_stop)))
+wh.grid <- expand.grid(X=levels(weight_cuts), Y=levels(height_cuts))
+
+wh.grid$Z <- apply(wh.grid, 1, function(col) mean(df$expenses[which(weight_cuts == col[1] & height_cuts == col[2])]))
+ggplot(wh.grid, aes(x=X, y=Y, fill=Z)) + geom_tile() + xlab("Waga") + ylab("Wzrost") + labs(fill="Wydatki")
 ```
 
 # Zadanie 3
@@ -230,6 +254,33 @@ show(test.table)
 chisq.test(test.table)
 ```
 Widzimy, że uzyskane p-value jest wyższe niż oczekiwany od nas poziom istotności, więc nie odrzucamy hipotezy zerowej i uznajemy, że płeć i status małżeński są niezależne.
+
+## Test zgodności rozkładu wzrostu
+
+```{r}
+hist(df$height)
+```
+
+Histogram zmiennej ma "cięższy" lewy ogon (Podejrzewam, że ma to związek z tym, że po wieku dojrzewania człowiek niewiele rośnie, a w starości w zasadzie ich wzrost się zmniejsza). Spróbowałem znaleźć parametry rozkładu logarytmicznie normalnego, dla których ten rozkład najbliżej oddaje rozkład wzrostu:
+
+```{r}
+library(MASS)
+fitted.distr <- fitdistr(df$height, "log-normal")
+fitted.distr
+```
+
+Przetestuję hipotezę, że zmienna `height` ma rozkład log-normalny o powyższych parametrach. Konkretniej:
+$$
+H_0: (\mu, \sigma) = (5.118,0.119) \\
+H_1: (\mu, \sigma) \not = (5.118, 0.119)
+$$
+
+Przeprowadzę test Kołmogorowa
+
+```{r}
+ks.test(df$height, "plnorm", mean=5.118, sd=0.119)
+```
+Jako że p-value ($0.3089$) jest większe od poziomu istotności $\alpha = 0.01$, nie odrzucam hipotezy zerowej. Natomiast należy pamiętać, że m.in. test Kołmogorowa nie działa dobrze dla rozkładów z parametrami estymatowanymi z próby (skoro wybraliśmy najlepsze możliwe dopasowanie, to oczywiście, że p-value będzie duże).
 
 # Zadanie 6
 
