@@ -31,17 +31,17 @@ Zbiór danych zawiera `r nrow(df)` obserwacji, 3 zmienne jakościowe i 5 zmienny
 library(ggplot2)
 library(GGally)
 
-#ggpairs(df[,-which(colnames(df)=='expenses')], aes(col=gender))
-ggpairs(df, columns = c(1,2,3,6,8))
 ggpairs(df, aes(col=gender), columns = c(1,2,3,6,8))
 ```
 
 
-Widzimy statystycznie znaczące korelacje między zmiennymi `expenses` i `age` (wydatkami a wiekiem) oraz `height` i `weight` (wzrostem i wagą) dla zagregowanych danych oraz dla wszystkich płci osobno. Powyższe wykresy wskazują na to, że wiek jest znacząco skorelowany z wydatkami.
+Widzimy statystycznie znaczące korelacje między zmiennymi `expenses` i `age` (wydatkami a wiekiem) oraz `height` i `weight` (wzrostem i wagą) dla zagregowanych danych oraz dla wszystkich płci osobno.
 
 ```{r}
 ggpairs(df[,c(4,5,7)])
 ```
+
+Z powyższego wynika między innymi, że osoby będące w związku małżeńskim mają średnio mniej zwierząt od osób nie żyjących w małżeństwach.
 
 W danych występują pojedyncze braki:
 ```{r}
@@ -95,7 +95,7 @@ Mapa ciepła pokazująca zależność wydatków w zależności od wzrostu i wagi
 
 ```{r}
 by_stop = 0.15
-weight_cuts <- cut(df$weight, quantile(df$weight, probs=seq(0, 1, by_stop)))
+weight_cuts <- cut(df$weight, quantile(df$weight, probs=seq(0, 1, 0.1)))
 height_cuts <- cut(df$height, quantile(df$height, probs=seq(0, 1, by_stop)))
 wh.grid <- expand.grid(X=levels(weight_cuts), Y=levels(height_cuts))
 
@@ -107,7 +107,7 @@ ggplot(wh.grid, aes(x=X, y=Y, fill=Z)) + geom_tile() + xlab("Waga") + ylab("Wzro
 
 ***Policz p-wartości dla hipotez o wartości średniej $m = 170$ i medianie $me = 165$ (cm)** dla zmiennej $wzrost$. Wybierz statystykę testową dla alternatywy lewostronnej, podaj założenia, z jakich korzystałeś i skomentuj, czy wydają Ci się uprawnione*
 
-Założę, że średnia zmiennej $wzrost$ ma rozkład normalny, ze względu na to, że obserwacje pochodzą z tego samego rozkładu i są niezależne, więc ze względu na dużą ich liczbę (`r nrow(df)` > 30) możemy użyć Centralnego Twierdzenia Granicznego. Ze względu na to, że nie znamy wariancji populacji, ale liczność próby jest liczna ($n = $`r nrow(df)`) użyjemy wariancji próby i policzymy statystykę testową dla standardowego rozkładu normalnego:
+Założę, że średnia zmiennej $wzrost$ ma rozkład normalny, ze względu na to, że jest duża liczba obserwacji (`r nrow(df)` > 30), są one niezależne i pochodzą one z tego samego rozkładu, więc możemy użyć Centralnego Twierdzenia Granicznego. Ze względu na to, że nie znamy wariancji populacji, ale liczność próby jest liczna ($n = $`r nrow(df)`) użyję wariancji próby i policzę statystykę testową dla standardowego rozkładu normalnego:
 
 $$
 Z = \frac{\bar{X} - m}{S_n}\sqrt{n} \sim U
@@ -116,15 +116,26 @@ $$
 ```{r}
 m <- 170
 n <- nrow(df)
-S_n <- sqrt((n-1)/n) * sd(df$height)
-Z <- (mean(df$height) - m) / S_n * sqrt(nrow(df))
+S_n <- sd(df$height)
+Z <- (mean(df$height) - m) / S_n * sqrt(n)
 pnorm(Z)
 ```
+Jeśli założymy, że $wzrost$ ma rozkład normalny, możemy skorzystać z testu istotności dla średniej przy nieznanej wariancji i wtedy $Z = \frac{\bar{X}-m}{S_n}\sqrt{n-1} \sim T$, gdzie tym razem $S_n$ to obciążony estymator odchylenia standardowego. Wartość p wychodzi niewiele większa.
+
+```{r}
+m <- 170
+n <- nrow(df)
+# Musimy użyć obciążonego estymatora odchylenia standardowego
+S_n <- sqrt((n-1)/n)*sd(df$height)
+Z <- (mean(df$height) - m) / S_n * sqrt(n-1)
+pt(Z, df=n-1)
+```
+
 
 Dla mediany możemy przeprowadzić test Wilcoxona dla jednej próby
 
 ```{r}
-wilcox.test(df$height, mu=165)
+wilcox.test(df$height, mu=165, alternative="less")
 ```
 
 # Zadanie 4
@@ -133,51 +144,38 @@ wilcox.test(df$height, mu=165)
 2. *kwantyle $\frac{1}{4}$, $\frac{2}{4}$ i $\frac{3}{4}$*
 *Podaj założenia, z jakich korzystałeś i skomentuj, czy wydają Ci się uprawnione.*
 
-Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład normalny. (Wykres jest liniowy)
+Z wykresu Q-Q plot dla zmiennej $wiek$ wynika, że ma ona rozkład w przybliżeniu normalny. (Wykres jest liniowy)
 
 ```{r}
-df.woman <- df$gender == "woman"
-df.man <- df$gender == "man"
-qqnorm(df$age); qqline(df[df.man,]$age, col=2)
-```
-
-Możemy przetestować to bardziej rygorystycznie korzystając z testu Kołmogorowa lub testu Shapiro-Wilka (TODO: MAŁY EFEKT TEŻ JEST STATYStYCZNIE ZNACZĄCY, *Like most statistical significance tests, if the sample size is sufficiently large this test may detect even trivial departures from the null hypothesis (i.e., although there may be some statistically significant effect, it may be too small to be of any practical significance); thus, additional investigation of the effect size is typically advisable, e.g., a Q–Q plot in this case*)
-
-```{r}
-ks.test((df[df.man,]$age - mean(df[df.man,]$age)) / sd(df[df.man,]$age), "pnorm")
-shapiro.test(df$age)
-```
-
-```{r}
-ggplot(df) + geom_histogram(aes(x=(age - mean(age)) / sd(age))) + geom_histogram(aes(x=rnorm(n=500)), color='red') + theme_minimal()
-hist((df$age - mean(df$age)) / sd(df$age))
-hist(rt(n=500, df=85))
+# df.woman <- df$gender == "woman"
+# df.man <- df$gender == "man"
+qqnorm(df$age); qqline(df$age, col=2)
 ```
 
 
 ## Przedziały ufności dla średniej
 
-Jeśli $P\left(\frac{\bar{X}-\mu}{S_n}\sqrt{n} \in (\pm z_{0.995})\right) = 0.99$, to: $P\left(\mu \in (\bar{X} \mp z_{0.995})\right) = 0.99$. Korzystamy z Centralnego Twierdzenia Granicznego.
+Jeśli $P\left(\frac{\bar{X}-\mu}{S_n}\sqrt{n} \in (\pm z_{0.995})\right) = 0.99$, to: $P\left(\mu \in (\bar{X} \mp \frac{S_n}{\sqrt{n}}z_{0.995})\right) = 0.99$. Korzystamy z Centralnego Twierdzenia Granicznego (jak w poprzednim punkcie, korzystam z nieobciążonego estymatora odchylenia standardowego).
 
 ```{r}
 n <- nrow(df)
-S_n <- sqrt((n-1)/n) * sd(df$age)
+S_n <- sd(df$age)
 
 show(c(mean(df$age) - S_n / sqrt(n) * qnorm(0.995), mean(df$age) + S_n / sqrt(n) * qnorm(0.995)))
 ```
 
-## Przedziały ufności dla wariancji
+## Przedziały ufności dla odchylenia standardowego
 
-Zakładając, że obserwacje wieku są niezależne, możemy zauważyć, że $P \left( \frac{nS_n^2}{\sigma^2} \in (\chi^2(0.005), \chi^2(0.995))\right) = 0.99$, więc: $P \left( \sigma^2 \in \left( \frac{nS_n^2}{\chi^2(0.995)}, \frac{nS_n^2}{\chi^2(0.005)} \right) \right) = 0.99$
+Zakładając, że obserwacje wieku są niezależne, możemy zauważyć, że $P \left( \frac{nS_n^2}{\sigma^2} \in (\chi^2(0.005,n-1), \chi^2(0.995,n-1))\right) = 0.99$, więc: $P \left( \sigma^2 \in \left( \frac{nS_n^2}{\chi^2(0.995,n-1)}, \frac{nS_n^2}{\chi^2(0.005,n-1)} \right) \right) = 0.99$
 
 ```{r}
 n <- nrow(df)
 S2 <- (n-1) / n * var(df$age)
 
-show(c( n*S2 / qchisq(0.995, n-1), n*S2 / qchisq(0.005, n-1) ))
+show(c( sqrt(n*S2 / qchisq(0.995, n-1)), sqrt(n*S2 / qchisq(0.005, n-1)) ))
 ```
 
-## Kwantyle
+## Kwartyle
 
 Aby oszacować przedziały ufności poszczególnych kwantyli, wykorzystam metodę Bootstrap. Wezmę $B=1000$ repróbek.
 
@@ -206,12 +204,14 @@ apply(quartiles, 2, function(x) quantile(x, c(0.005, 0.995)))
 ## Różnica między średnią wartością wzrostu dla kobiet i dla mężczyzn
 
 ```{r}
-qqnorm(df[df.woman,]$height) 
-qqnorm(df[df.man,]$height)
+df.woman <- df$gender == "woman"
+df.man <- df$gender == "man"
+qqnorm(df[df.woman,]$height); qqline(df[df.woman,]$height, col='red') 
+qqnorm(df[df.man,]$height); qqline(df[df.man,]$height, col='red')
 ```
-Wykresy wyglądają na leżące na prostej, więc uznamy, że obie zmienne pochodzą z rozkładu normalnego.
+Wykresy wyglądają na leżące na prostej, więc uznam, że obie zmienne pochodzą z rozkładu normalnego (a przynajmniej tak je przybliżę).
 
-Skorzystamy z t-testu dla dwóch średnich (testu Welcha). Przyjmujemy przy tym Nasza hipotezy:
+Skorzystamy z t-testu dla dwóch średnich (testu Welcha). Przyjmujemy przy tym hipotezy:
 $$
 H_0: \mu_1 = \mu_2 \\
 H_a: \mu_1 \not= \mu_2
@@ -326,7 +326,7 @@ Zatem przyjmę, że najlepiej odrzucić zmienną `married`. Sprawdzę, czy w mod
 plot(model.no.married, which=1)
 ```
 
-Z powyższego wykresu wynika, że zależność między wydatkami a zmiennymi objaśniającymi nie jest do końca liniowa.
+Z powyższego wykresu wynika, że zależność między wydatkami a zmiennymi objaśniającymi nie jest do końca liniowa. Trudno zatem powiedzieć, że spełnione są założenia modelu liniowego.
 
 Prawdopodobnie z tego powodu widzimy, że błędy nie są od siebie niezależne (różnica między sąsiednimi błędami jest mniejsza niż między błędami wybranymi losowo - autokorelacja).
 
@@ -348,10 +348,21 @@ Widzimy, że wariancja residuów raczej nie zależy od zmiennej objaśnianej - u
 
 # Obserwacje odstające
 
+Poniżej widać wykres zależności błędów *standardyzowanych* od dźwigni.
+
 ```{r}
 plot(model.no.married, which=5)
 ```
-Widzimy 3 obserwacje odstające (reszty studentyzowane odchylają się od 0 o więcej niż 3): 305, 409, 472.
+
+A poniżej znajduje się wykres zależności błędów *studentyzowanych* w zależności od predykcji (Czerwone linie zaznaczają poziom $y=3$ i $y=-3$).
+
+```{r}
+plot(model.no.married$fitted.values, studres(model.no.married))
+studresd <- studres(model.no.married)
+ggplot() + geom_point(aes(x=model.no.married$fitted.values, y=studresd)) + geom_hline(aes(yintercept=3), col='red') + geom_hline(aes(yintercept=-3), col='red') + geom_text(aes(x=model.no.married$fitted.values, y=studresd, label=seq(1, length(model.no.married$fitted.values), by=1))) + ylab("Reszty studentyzowane") + xlab("Dopasowane wartości") + theme_minimal()
+```
+
+Widzimy 3 obserwacje odstające (reszty studentyzowane odchylają się od 0 o więcej niż 3): 262, 409, 472.
 
 Na wykładzie za dźwigniowe zostały uznane obserwacje, dla których dźwignia jest większa od $\frac{2(p+1)}{n}$. Sprawdźmy, czy istnieją obserwacje dźwigniowe wg tej definicji.
 
@@ -360,5 +371,5 @@ p <- 10
 n <- 500
 which(hatvalues(model.no.married) > 2*(p+1)/n)
 ```
-Widzimy, że jedyną obserwacją zarówno odstającą jak i dźwigniową jest 409. Możemy zatem zastanowić się nad usunięciem ze zbioru danych obserwacji 305 i 472 (obserwacji odstających, niedźwigniowych)
+Widzimy, że jedyną obserwacją zarówno odstającą jak i dźwigniową jest 409. Możemy zatem zastanowić się nad usunięciem ze zbioru danych obserwacji 262 i 472 (obserwacji odstających, niedźwigniowych).
 
